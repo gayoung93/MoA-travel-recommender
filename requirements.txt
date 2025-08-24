@@ -1,0 +1,9 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+streamlit
+pandas
+numpy
+scikit-learn
+transformers
+sentence-transformers
+requests
+sentencepiece  # <- 마지막 열쇠 추가!

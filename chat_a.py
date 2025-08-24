@@ -13,35 +13,46 @@ from collections import defaultdict
 from datetime import datetime
 import random
 import re
-import streamlit as st
 from css import log_and_render
-
+import streamlit as st, pandas as pd, json, requests
 # -------------------- 모델 및 데이터 로딩 --------------------
+# 모델 로딩 부분을 함수로 만들고 데코레이터 추가
 @st.cache_resource
-def load_models():
-    sbert_model = SentenceTransformer("jhgan/ko-sroberta-multitask")
-    tokenizer = AutoTokenizer.from_pretrained("hun3359/klue-bert-base-sentiment")
-    sentiment_model = AutoModelForSequenceClassification.from_pretrained("hun3359/klue-bert-base-sentiment")
-    sentiment_model.eval()
-    return sbert_model, tokenizer, sentiment_model
+def load_sbert_model():
+    print("SBERT 모델 로딩 중... (이 메시지는 한 번만 보여야 합니다)")    
+    return SentenceTransformer("jhgan/ko-sroberta-multitask")
 
-sbert_model, tokenizer, sentiment_model = load_models()
+@st.cache_resource
+def load_sentiment_model():
+    print("감성 분석 모델 로딩 중... (이 메시지는 한 번만 보여야 합니다)")    
+    model = AutoModelForSequenceClassification.from_pretrained("hun3359/klue-bert-base-sentiment")
+    model.eval()
+    return model
 
-@st.cache_data
-def load_data():
-    travel_df = pd.read_csv("./챗봇데이터/트립닷컴_감정_테마_한줄설명_통합_07_08.csv")
-    festival_df = pd.read_csv("./챗봇데이터/전처리_통합지역축제.csv")
-    external_score_df = pd.read_csv("./챗봇데이터/클러스터_포함_외부요인_종합점수_결과_최종.csv")
-    external_score_df.columns = external_score_df.columns.str.strip()
-    weather_df = pd.read_csv("./챗봇데이터/전처리_날씨_통합_07_08.csv")
-    package_df = pd.read_csv("./챗봇데이터/모두투어_컬럼별_개수_07_08.csv")
-    package_df.columns = package_df.columns.str.strip()
-    master_df = pd.read_csv("./챗봇데이터/나라_도시_리스트.csv")
-    return travel_df, festival_df, external_score_df, weather_df, package_df, master_df
+@st.cache_resource
+def load_tokenizer():
+    print("토크나이저 로딩 중... (이 메시지는 한 번만 보여야 합니다)")   
+    return AutoTokenizer.from_pretrained("hun3359/klue-bert-base-sentiment")
 
-travel_df, festival_df, external_score_df, weather_df, package_df, master_df = load_data()
 
-# -------------------- 데이터 전처리 및 필터링 --------------------
+@st.cache_data(show_spinner=False)
+def load_csv_any(p):
+    return pd.read_csv(p) if str(p).startswith(("http://","https://")) else pd.read_csv(p)
+
+# trip_url = st.secrets.get("TRIPDATA_URL")
+# if not trip_url:
+#     st.error("TRIPDATA_URL 미설정: Streamlit Secrets에 URL을 넣어주세요.")
+#     st.stop()
+
+travel_df = pd.read_csv("트립닷컴_감정_테마_한줄설명_통합_07_08.csv")
+festival_df = pd.read_csv("전처리_통합지역축제.csv")
+external_score_df = pd.read_csv("클러스터_포함_외부요인_종합점수_결과_최종.csv")
+external_score_df.columns = external_score_df.columns.str.strip()
+weather_df = pd.read_csv("전처리_날씨_통합_07_08.csv")
+package_df = pd.read_csv("모두투어_컬럼별_개수_07_08.csv")
+package_df.columns = package_df.columns.str.strip()
+master_df = pd.read_csv("나라_도시_리스트.csv")
+
 countries = travel_df["여행나라"].dropna().unique().tolist()
 cities = travel_df["여행도시"].dropna().unique().tolist()
     
@@ -911,9 +922,9 @@ def get_highlight_message(selected_place, travel_df, external_score_df, festival
 
     if not highlight_candidates:
         fallback_messages = [
-        "🌿 부담 없이 가볍게 떠나고 싶을 때, {city}가 제격이에요.",
-        "🎈 뚜렷한 목적 없이도 가볍게 떠나기 좋은 곳, {city}예요.",
-        "🌸 아직 많이 알려지지 않은 매력적인 도시, {city}에서 조용한 시간을 보내보세요."
+        "🌿 일상을 벗어나 새로운 경험을 만들어주는, {city}로 떠나보세요.",
+        "🎈 뚜렷한 목적 없이도 좋은 기억만 남게 해주는, {city}예요.",
+        "🌸 매력이 흘러넘치는 도시, {city}에서 행복한 시간을 보내보세요."
         ]
         return random.choice(fallback_messages).format(city=city)
 
@@ -964,10 +975,13 @@ def override_emotion_if_needed(text):
     return None
     
 def analyze_emotion(user_input):
+    sentiment_model = load_sentiment_model()
+    tokenizer = load_tokenizer()
     override = override_emotion_if_needed(user_input)
     if override:
         return override
     inputs = tokenizer(user_input, return_tensors="pt", truncation=True)
+    
     with torch.no_grad():
         probs = F.softmax(sentiment_model(**inputs).logits, dim=1)[0]
     top_indices = torch.topk(probs, k=5).indices.tolist()
@@ -995,6 +1009,8 @@ def detect_intent(user_input):
         for word in keywords:
             phrases.append(word)
             labels.append(intent)
+
+    sbert_model = load_sbert_model()
     input_emb = sbert_model.encode(user_input, convert_to_tensor=True)
     phrase_embs = sbert_model.encode(phrases, convert_to_tensor=True)
     sims = util.cos_sim(input_emb, phrase_embs)[0]

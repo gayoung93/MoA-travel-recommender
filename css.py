@@ -1,54 +1,8 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import re
+import uuid
 import pandas as pd
-import time
-import html
-from bs4 import BeautifulSoup
-"""
-# ────────────────── 타이핑 애니메이션
-def typewriter_effect_html(key: str, html_message: str, color: str, align: str, delay: float = 0.03):
-    # 이미 실행된 키면 return
-    if st.session_state.get(key, False):
-        return
-
-    container = st.empty() if key is None else st.empty()
-
-    soup = BeautifulSoup(html_message, "html.parser")
-    final_html = ""
-
-    for element in soup.contents:
-        if element.name is None:
-            typed_text = ""
-            for ch in element:
-                typed_text += ch
-                temp_html = final_html + html.escape(typed_text)
-                container.markdown(
-                    f'''<div style="text-align:{align}; margin:6px 0;">
-                        <span style="background:{color}; padding:10px 14px; border-radius:12px;
-                        display:inline-block; max-width:80%; font-size:13px; line-height:1.45;
-                        word-break:break-word;">{temp_html}</span>
-                    </div>''',
-                    unsafe_allow_html=True
-                )
-                time.sleep(delay)
-            final_html += html.escape(typed_text)
-        else:
-            final_html += str(element)
-
-    # 마지막 완성된 html 렌더링 (혹시 중간에 실패했을 때 대비)
-    container.markdown(
-        f'''<div style="text-align:{align}; margin:6px 0;">
-            <span style="background:{color}; padding:10px 14px; border-radius:12px;
-            display:inline-block; max-width:80%; font-size:13px; line-height:1.45;
-            word-break:break-word;">{final_html}</span>
-        </div>''',
-        unsafe_allow_html=True
-    )
-
-    # 실행 완료 상태 저장 (반복 방지용)
-    st.session_state[key] = True
-"""
 
 # ────────────────── 말풍선 생성 함수
 # 색상 정의
@@ -75,18 +29,15 @@ def render_message(
     message = str(message).rstrip()
 
     # 2) 풍선 출력 
-    if sender == "bot":
-        typewriter_effect_html(html_message=message, color=color, align=align, delay=0.02, key=key)
-    else:
-        st.markdown(
-            f'''<div style="text-align:{align}; margin:6px 0;">
-            <p style = "font-size:13px;"></p>
-            <span style="background:{color}; padding:10px 14px; border-radius:12px;
-            display:inline-block; max-width:80%; font-size:13px; line-height:1.45;
-            word-break:break-word; ">{message}</span>
-            </div>''',
-            unsafe_allow_html=True,
-        )
+    st.markdown(
+        f'''<div style="text-align:{align}; margin:6px 0;">
+        <p style = "font-size:13px;"></p>
+        <span style="background:{color}; padding:10px 14px; border-radius:12px;
+        display:inline-block; max-width:80%; font-size:13px; line-height:1.45;
+        word-break:break-word; ">{message}</span>
+        </div>''',
+        unsafe_allow_html=True,
+    )
 
     # 3) 칩 버튼이 있을 경우
     if chips:
@@ -99,8 +50,8 @@ def render_message(
 def render_chip_buttons(options, key_prefix="chip", selected_value=None):
     def slugify(text):
         return re.sub(r"[^a-zA-Z0-9]+", "-", str(text)).strip("-").lower() or "empty"
-    session_key     = f"{key_prefix}_selected"
-    selected_value  = st.session_state.get(session_key)
+    session_key = f"{key_prefix}_selected"
+    selected_value = st.session_state.get(session_key)
     
     # 스타일 적용
     st.markdown(f"""
@@ -116,10 +67,11 @@ def render_chip_buttons(options, key_prefix="chip", selected_value=None):
         font-size: 14px;
         cursor: pointer;
         transition: 0.2s ease-in-out;
-        margin-bottom: 8px;
+        margin-bottom: -2px;
         width: 230px;
         text-align:center;
-    }}
+    }}  
+    
     button[data-testid="stBaseButton-secondary"]:hover {{
         background-color: #e8f0ef;
         border-color: #009c75;
@@ -136,8 +88,8 @@ def render_chip_buttons(options, key_prefix="chip", selected_value=None):
     
     clicked_val = None
 
-    cols = st.columns(len(options))
-    for idx, (col, opt) in enumerate(zip(cols, options)):
+    #cols = st.columns(len(options))
+    for idx, opt in enumerate(options):
         if opt is None or (isinstance(opt, float) and pd.isna(opt)) or str(opt).strip()=="":
             continue
 
@@ -151,7 +103,7 @@ def render_chip_buttons(options, key_prefix="chip", selected_value=None):
         safe_opt   = slugify(opt)
         stable_key = f"{key_prefix}_{idx}_{safe_opt}"
 
-        if col.button(label, key=stable_key, disabled=disabled):
+        if st.button(label, key=stable_key, disabled=disabled):
             clicked_val = opt
 
     return clicked_val
