@@ -44,7 +44,14 @@ def load_csv_any(p):
 #     st.error("TRIPDATA_URL 미설정: Streamlit Secrets에 URL을 넣어주세요.")
 #     st.stop()
 
-travel_df = pd.read_csv("./data/트립닷컴_감정_테마_한줄설명_통합_07_08.csv")
+def load_df():
+    try:
+        return pd.read_csv("data/트립닷컴_감정_테마_한줄설명_통합_07_08.xz", compression="xz",
+                           encoding="utf-8-sig", low_memory=False)
+    except UnicodeDecodeError:
+        return pd.read_csv("data/트립닷컴_감정_테마_한줄설명_통합_07_08.xz", compression="xz",
+                           encoding="cp949", low_memory=False)
+travel_df = load_df()
 festival_df = pd.read_csv("./data/전처리_통합지역축제.csv")
 external_score_df = pd.read_csv("./data/클러스터_포함_외부요인_종합점수_결과_최종.csv")
 external_score_df.columns = external_score_df.columns.str.strip()
