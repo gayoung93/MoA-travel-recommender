@@ -1,9 +1,9 @@
 --extra-index-url https://download.pytorch.org/whl/cpu
-streamlit
-pandas
+streamlit>=1.36,<2
+pandas>=2.2
 numpy
 scikit-learn
 transformers
 sentence-transformers
-requests
-sentencepiece  # <- 마지막 열쇠 추가!
+requests>=2.32
+sentencepiece
