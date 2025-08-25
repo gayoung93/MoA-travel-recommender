@@ -1,4 +1,0 @@
-﻿# ignore large data locally
-*.csv
-*.json
-data/
