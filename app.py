@@ -56,13 +56,13 @@ def load_json_data(file_path):
 #     st.error("TRIPDATA_URL 미설정: Streamlit Secrets에 URL을 넣어주세요.")
 #     st.stop()
 
-travel_df = load_travel_data("트립닷컴_감정_테마_한줄설명_통합_07_08.csv")
-external_score_df = load_travel_data("클러스터_포함_외부요인_종합점수_결과_최종.csv")
-festival_df = load_travel_data("전처리_통합지역축제.csv")
-weather_df = load_travel_data("전처리_날씨_통합_07_08.csv")
-package_df = load_travel_data("모두투어_컬럼별_개수_07_08.csv")
-master_df = load_travel_data("나라_도시_리스트.csv")
-theme_title_phrases = load_json_data("theme_title_phrases.json")
+travel_df = load_travel_data("./data/트립닷컴_감정_테마_한줄설명_통합_07_08.csv")
+external_score_df = load_travel_data("./data/클러스터_포함_외부요인_종합점수_결과_최종.csv")
+festival_df = load_travel_data("./data/전처리_통합지역축제.csv")
+weather_df = load_travel_data("./data/전처리_날씨_통합_07_08.csv")
+package_df = load_travel_data("./data/모두투어_컬럼별_개수_07_08.csv")
+master_df = load_travel_data("./data/나라_도시_리스트.csv")
+theme_title_phrases = load_json_data("./data/theme_title_phrases.json")
 
 # ───────────────────────────────────── streamlit용 함수
 def init_session():
